@@ -1,18 +1,36 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import DashboardLayout from '@/components/DashboardLayout';
-import { aiIssueMapping } from '@/data/mockData';
+import GoogleMapPicker from '@/components/GoogleMapPicker';
 import { LayoutDashboard, AlertTriangle, FileWarning, MapPin, Bell, User, Upload, Sparkles, Building2, Gauge } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PriorityBadge from '@/components/PriorityBadge';
 import { toast } from 'sonner';
+import { api } from '@/lib/api';
+
+// local copy of mapping used for dropdown
+const aiIssueMapping: Record<string, { dept: string; priority: 'low' | 'medium' | 'high' }> = {
+  'Streetlight Not Working': { dept: 'BESCOM', priority: 'medium' },
+  'Electric Pole Damage': { dept: 'BESCOM', priority: 'high' },
+  'Power Line Issue': { dept: 'BESCOM', priority: 'high' },
+  'Garbage Pile': { dept: 'BBMP', priority: 'medium' },
+  'Pothole': { dept: 'BBMP', priority: 'high' },
+  'Drainage Issue': { dept: 'BBMP', priority: 'high' },
+  'Road Crack': { dept: 'BBMP', priority: 'low' },
+  'Broken Footpath': { dept: 'BBMP', priority: 'medium' },
+};
+
 
 const issueTypes = Object.keys(aiIssueMapping);
 
 const ReportIssuePage = () => {
   const { t } = useTranslation();
-  const [description, setDescription] = useState('');
+  const [image, setImage] = useState<File | null>(null);
+  const [location, setLocation] = useState('Bengaluru, Karnataka');
+  const [lat, setLat] = useState(12.9716);
+  const [lng, setLng] = useState(77.5946);
   const [selectedType, setSelectedType] = useState('');
+  const [description, setDescription] = useState('');
   const [showAI, setShowAI] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -27,14 +45,41 @@ const ReportIssuePage = () => {
 
   const aiResult = selectedType ? aiIssueMapping[selectedType] : null;
 
-  const handleDetect = () => {
-    if (selectedType) setShowAI(true);
+  const handleDetect = async () => {
+    if (!selectedType) return;
+    try {
+      const res = await api.get('/ai/suggest', { params: { type: selectedType } });
+      // display result from backend
+      aiResult.dept = res.data.dept;
+      aiResult.priority = res.data.priority;
+      setShowAI(true);
+    } catch (err) {
+      console.error(err);
+      setShowAI(true); // still show local suggestion
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
-    toast.success('Complaint submitted successfully!');
+    try {
+      const formData = new FormData();
+      formData.append('issueType', selectedType);
+      formData.append('description', description);
+      formData.append('location', location);
+      formData.append('lat', lat.toString());
+      formData.append('lng', lng.toString());
+      if (image) {
+        formData.append('image', image);
+      }
+      await api.post('/complaints', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setSubmitted(true);
+      toast.success('Complaint submitted successfully!');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to submit complaint');
+    }
   };
 
   return (
@@ -61,10 +106,12 @@ const ReportIssuePage = () => {
               {/* Photo upload */}
               <div>
                 <label className="text-sm font-medium text-muted-foreground mb-2 block">{t('uploadPhoto')}</label>
-                <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                  <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">Click or drag to upload</p>
-                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => setImage(e.target.files?.[0] || null)}
+                  className="w-full px-4 py-3 rounded-xl bg-secondary border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
               </div>
 
               {/* Issue type selector */}
@@ -97,16 +144,42 @@ const ReportIssuePage = () => {
               {/* Location */}
               <div>
                 <label className="text-sm font-medium text-muted-foreground mb-2 block">{t('location')}</label>
-                <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={location}
+                  onChange={e => setLocation(e.target.value)}
+                  placeholder="Enter location name"
+                  className="w-full px-4 py-3 rounded-xl bg-secondary border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 mb-3"
+                />
+                <GoogleMapPicker
+                  lat={lat}
+                  lng={lng}
+                  onLocationChange={(newLat, newLng, locName) => {
+                    setLat(newLat);
+                    setLng(newLng);
+                    if (!location.includes(',')) {
+                      setLocation(locName);
+                    }
+                  }}
+                  height="250px"
+                />
+                <div className="flex gap-2 mt-3">
                   <input
-                    type="text"
-                    defaultValue="Bengaluru, Karnataka"
-                    className="flex-1 px-4 py-3 rounded-xl bg-secondary border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    readOnly
+                    type="number"
+                    step="0.0001"
+                    value={lat}
+                    onChange={e => setLat(parseFloat(e.target.value))}
+                    placeholder="Latitude"
+                    className="flex-1 px-4 py-3 rounded-xl bg-secondary border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
-                  <button type="button" className="px-4 py-3 rounded-xl bg-primary/10 text-primary font-medium hover:bg-primary/20 transition-colors">
-                    <MapPin className="w-5 h-5" />
-                  </button>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    value={lng}
+                    onChange={e => setLng(parseFloat(e.target.value))}
+                    placeholder="Longitude"
+                    className="flex-1 px-4 py-3 rounded-xl bg-secondary border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
                 </div>
               </div>
 

@@ -4,12 +4,15 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import ErrorBoundary from "./components/ErrorBoundary";
 import './i18n';
 import LoginPage from "./pages/LoginPage";
 import CitizenDashboard from "./pages/citizen/CitizenDashboard";
 import ReportIssuePage from "./pages/citizen/ReportIssuePage";
 import MyComplaintsPage from "./pages/citizen/MyComplaintsPage";
+import NearbyIssuesPage from "./pages/citizen/NearbyIssuesPage";
 import NotificationsPage from "./pages/citizen/NotificationsPage";
+import ProfilePage from "./pages/citizen/ProfilePage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import DepartmentDashboard from "./pages/department/DepartmentDashboard";
 import NotFound from "./pages/NotFound";
@@ -35,29 +38,33 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<HomeRedirect />} />
-            <Route path="/login" element={<LoginPage />} />
-            
-            {/* Citizen routes */}
-            <Route path="/citizen" element={<ProtectedRoute allowedRole="citizen"><CitizenDashboard /></ProtectedRoute>} />
-            <Route path="/citizen/report" element={<ProtectedRoute allowedRole="citizen"><ReportIssuePage /></ProtectedRoute>} />
-            <Route path="/citizen/complaints" element={<ProtectedRoute allowedRole="citizen"><MyComplaintsPage /></ProtectedRoute>} />
-            <Route path="/citizen/notifications" element={<ProtectedRoute allowedRole="citizen"><NotificationsPage /></ProtectedRoute>} />
-            
-            {/* Admin routes */}
-            <Route path="/admin" element={<ProtectedRoute allowedRole="admin"><AdminDashboard /></ProtectedRoute>} />
-            
-            {/* Department routes */}
-            <Route path="/bbmp" element={<ProtectedRoute allowedRole="bbmp"><DepartmentDashboard deptName="BBMP" /></ProtectedRoute>} />
-            <Route path="/bescom" element={<ProtectedRoute allowedRole="bescom"><DepartmentDashboard deptName="BESCOM" /></ProtectedRoute>} />
-            
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
+      <ErrorBoundary>
+        <AuthProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<HomeRedirect />} />
+              <Route path="/login" element={<LoginPage />} />
+              
+              {/* Citizen routes */}
+              <Route path="/citizen" element={<ProtectedRoute allowedRole="citizen"><CitizenDashboard /></ProtectedRoute>} />
+              <Route path="/citizen/report" element={<ProtectedRoute allowedRole="citizen"><ReportIssuePage /></ProtectedRoute>} />
+              <Route path="/citizen/complaints" element={<ProtectedRoute allowedRole="citizen"><MyComplaintsPage /></ProtectedRoute>} />
+              <Route path="/citizen/nearby" element={<ProtectedRoute allowedRole="citizen"><NearbyIssuesPage /></ProtectedRoute>} />
+              <Route path="/citizen/notifications" element={<ProtectedRoute allowedRole="citizen"><NotificationsPage /></ProtectedRoute>} />
+              <Route path="/citizen/profile" element={<ProtectedRoute allowedRole="citizen"><ProfilePage /></ProtectedRoute>} />
+              
+              {/* Admin routes */}
+              <Route path="/admin" element={<ProtectedRoute allowedRole="admin"><AdminDashboard /></ProtectedRoute>} />
+              
+              {/* Department routes */}
+              <Route path="/bbmp" element={<ProtectedRoute allowedRole="bbmp"><DepartmentDashboard deptName="BBMP" /></ProtectedRoute>} />
+              <Route path="/bescom" element={<ProtectedRoute allowedRole="bescom"><DepartmentDashboard deptName="BESCOM" /></ProtectedRoute>} />
+              
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+      </ErrorBoundary>
     </TooltipProvider>
   </QueryClientProvider>
 );

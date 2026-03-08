@@ -28,15 +28,36 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
 
-  const login = (email: string, _password: string, role: UserRole) => {
-    setUser({ id: '1', name: email.split('@')[0], email, role });
+  // initialize from local storage
+  React.useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    const token = localStorage.getItem('token');
+    if (storedUser && token) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
+
+  const login = async (email: string, password: string, role: UserRole) => {
+    const res = await import('../lib/api').then(m => m.api.post('/auth/login', { email, password }));
+    const data = res.data;
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    setUser(data.user);
   };
 
-  const register = (name: string, email: string, _password: string, role: UserRole) => {
-    setUser({ id: '1', name, email, role });
+  const register = async (name: string, email: string, password: string, role: UserRole) => {
+    const res = await import('../lib/api').then(m => m.api.post('/auth/register', { name, email, password, role }));
+    const data = res.data;
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    setUser(data.user);
   };
 
-  const logout = () => setUser(null);
+  const logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+  };
 
   return (
     <AuthContext.Provider value={{ user, login, register, logout, isAuthenticated: !!user }}>

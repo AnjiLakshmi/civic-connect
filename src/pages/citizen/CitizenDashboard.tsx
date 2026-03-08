@@ -1,9 +1,11 @@
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import DashboardLayout from '@/components/DashboardLayout';
 import StatsCard from '@/components/StatsCard';
 import ComplaintCard from '@/components/ComplaintCard';
-import { mockComplaints } from '@/data/mockData';
 import { LayoutDashboard, FileWarning, MapPin, Bell, User, AlertTriangle, CheckCircle, Clock, Zap } from 'lucide-react';
+import { api } from '@/lib/api';
+import { Complaint } from '@/types';
 
 const CitizenDashboard = () => {
   const { t } = useTranslation();
@@ -17,7 +19,17 @@ const CitizenDashboard = () => {
     { label: t('profile'), icon: <User className="w-4 h-4" />, path: '/citizen/profile' },
   ];
 
-  const stats = { total: 6, pending: 2, assigned: 2, resolved: 1 };
+  const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const stats = {
+    total: complaints.length,
+    pending: complaints.filter(c => c.status === 'pending').length,
+    assigned: complaints.filter(c => c.status === 'assigned' || c.status === 'inProgress').length,
+    resolved: complaints.filter(c => c.status === 'resolved').length,
+  };
+
+  useEffect(() => {
+    api.get<Complaint[]>('/complaints').then(res => setComplaints(res.data));
+  }, []);
 
   return (
     <DashboardLayout sidebarItems={sidebarItems} title={t('dashboard')}>
@@ -43,8 +55,8 @@ const CitizenDashboard = () => {
         <div>
           <h3 className="text-lg font-semibold font-display mb-4">{t('recentComplaints')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {mockComplaints.slice(0, 4).map((c, i) => (
-              <ComplaintCard key={c.id} complaint={c} index={i} />
+            {complaints.slice(0, 4).map((c, i) => (
+              <ComplaintCard key={c._id} complaint={c} index={i} />
             ))}
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import DashboardLayout from '@/components/DashboardLayout';
 import ComplaintCard from '@/components/ComplaintCard';
@@ -6,8 +6,10 @@ import { LayoutDashboard, AlertTriangle, FileWarning, MapPin, Bell, User } from 
 import { api } from '@/lib/api';
 import { Complaint } from '@/types';
 
-const MyComplaintsPage = () => {
+const NearbyIssuesPage = () => {
   const { t } = useTranslation();
+  const [complaints, setComplaints] = useState<Complaint[]>([]);
+
   const sidebarItems = [
     { label: t('dashboard'), icon: <LayoutDashboard className="w-4 h-4" />, path: '/citizen' },
     { label: t('reportIssue'), icon: <AlertTriangle className="w-4 h-4" />, path: '/citizen/report' },
@@ -17,21 +19,26 @@ const MyComplaintsPage = () => {
     { label: t('profile'), icon: <User className="w-4 h-4" />, path: '/citizen/profile' },
   ];
 
-  const [complaints, setComplaints] = useState<Complaint[]>([]);
-
   useEffect(() => {
     api.get<Complaint[]>('/complaints').then(res => setComplaints(res.data));
   }, []);
 
   return (
-    <DashboardLayout sidebarItems={sidebarItems} title={t('myComplaints')}>
+    <DashboardLayout sidebarItems={sidebarItems} title={t('nearbyIssues')}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {complaints.map((c, i) => (
-          <ComplaintCard key={c._id} complaint={c} index={i} />
-        ))}
+        {complaints.length > 0 ? (
+          complaints.map((c, i) => (
+            <ComplaintCard key={c._id} complaint={c} index={i} />
+          ))
+        ) : (
+          <div className="col-span-2 text-center py-12">
+            <MapPin className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+            <p className="text-muted-foreground">No nearby issues found</p>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );
 };
 
-export default MyComplaintsPage;
+export default NearbyIssuesPage;

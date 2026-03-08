@@ -20,14 +20,18 @@ const LoginPage = () => {
   const [isRegister, setIsRegister] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'citizen' as UserRole });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isRegister) {
-      register(form.name, form.email, form.password, form.role);
-    } else {
-      login(form.email, form.password, form.role);
+    try {
+      if (isRegister) {
+        await register(form.name, form.email, form.password, form.role);
+      } else {
+        await login(form.email, form.password, form.role);
+      }
+      navigate(roleRoutes[form.role]);
+    } catch (err) {
+      console.error(err);
     }
-    navigate(roleRoutes[form.role]);
   };
 
   return (

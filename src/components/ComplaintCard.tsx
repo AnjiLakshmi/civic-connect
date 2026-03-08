@@ -1,4 +1,4 @@
-import { Complaint } from '@/data/mockData';
+import { Complaint } from '@/types';
 import StatusBadge from './StatusBadge';
 import PriorityBadge from './PriorityBadge';
 import { MapPin, Calendar, Building2, ThumbsUp } from 'lucide-react';
@@ -42,12 +42,12 @@ const ComplaintCard = ({ complaint, index = 0, showActions, onAction }: Complain
       {showActions && onAction && (
         <div className="flex gap-2 mt-4 pt-3 border-t border-border/50">
           {complaint.status === 'assigned' && (
-            <button onClick={() => onAction('start', complaint.id)} className="px-3 py-1.5 text-xs font-medium rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+            <button onClick={() => onAction('start', complaint._id)} className="px-3 py-1.5 text-xs font-medium rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
               Start Work
             </button>
           )}
           {complaint.status === 'inProgress' && (
-            <button onClick={() => onAction('resolve', complaint.id)} className="px-3 py-1.5 text-xs font-medium rounded-lg bg-success/10 text-success hover:bg-success/20 transition-colors">
+            <button onClick={() => onAction('resolve', complaint._id)} className="px-3 py-1.5 text-xs font-medium rounded-lg bg-success/10 text-success hover:bg-success/20 transition-colors">
               Mark Resolved
             </button>
           )}
